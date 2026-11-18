@@ -1,0 +1,32 @@
+services:
+  pg:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+      POSTGRES_DB: lnk_it
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U docker -d lnk_it']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: lnkit-app:v1
+    build: .
+    command: pnpm run start
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: 'postgresql://docker:docker@pg:5432/lnk_it'
+      PORT: 3333
+      WEB_ORIGIN: http://localhost:3000
+      API_URL: http://localhost:3333
+    depends_on:
+      pg:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

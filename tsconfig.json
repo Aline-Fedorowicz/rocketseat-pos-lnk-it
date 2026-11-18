@@ -2,19 +2,42 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "Node 22",
   "_version": "22.0.0",
-
   "compilerOptions": {
-    "lib": ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "module": "ESNext",
-    "target": "ESNext",
-
+    "target": "ES2017",
+    "jsx": "preserve",
+    "noEmit": true,
+    "allowJs": true,
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "moduleResolution": "bundler",
-
     "paths": {
-      "@/*": ["./src/*"]
-    }
-  }
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "resolveJsonModule": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

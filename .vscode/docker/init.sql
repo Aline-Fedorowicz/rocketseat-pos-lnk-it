@@ -1,0 +1,1 @@
+CREATE DATABASE lnk_it_test;

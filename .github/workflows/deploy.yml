@@ -1,0 +1,117 @@
+name: CI and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate frontend and backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build Next.js
+        run: pnpm build
+
+      - name: Scan source dependencies
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+  deploy:
+    name: Build and deploy to ECS
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build container image
+        id: image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:${GITHUB_SHA::7}"
+          docker build --tag "$IMAGE_URI" .
+          echo "uri=$IMAGE_URI" >> "$GITHUB_OUTPUT"
+
+      - name: Scan container image before publishing
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image.outputs.uri }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Push image to Amazon ECR
+        run: docker push "${{ steps.image.outputs.uri }}"
+
+      - name: Render ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: .aws/task-definition.json
+          container-name: lnk-it
+          image: ${{ steps.image.outputs.uri }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
