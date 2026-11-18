@@ -82,9 +82,10 @@ jobs:
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-push-image
-        run: docker build -t lnk-it:v1 .
-             docker tag lnk-it:v1 372293371742.dkr.ecr.us-east-2.amazonaws.com/lnk-it:v1
-             docker push 372293371742.dkr.ecr.us-east-2.amazonaws.com/lnk-it:v1
+        run: |
+          docker build -t lnk-it:v1 .
+          docker tag lnk-it:v1 372293371742.dkr.ecr.us-east-2.amazonaws.com/lnk-it:v1
+          docker push 372293371742.dkr.ecr.us-east-2.amazonaws.com/lnk-it:v1
 
 
 

@@ -14,6 +14,10 @@ ENV NODE_ENV=production
 
 RUN pnpm run build
 
-EXPOSE 3000 3333
+COPY --from=build /usr/src/app/dist ./dist
+COPY --from=build /usr/src/app/node_modules ./node_modules
+COPY --from=build /usr/src/app/package.json ./package.json
+
+EXPOSE 3333 3000
 
 CMD ["pnpm", "run", "start"]
