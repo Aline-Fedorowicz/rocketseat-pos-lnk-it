@@ -13,6 +13,7 @@ interface Link {
 }
 
 interface Access {
+  id: string
   accessedAt: string
   userAgent: string | null
   referer: string | null
@@ -410,10 +411,10 @@ function App() {
                       </p>
                     ) : (
                       <ul className="m-0 grid max-h-[220px] list-none gap-2 overflow-y-auto p-0 text-[10px] text-muted">
-                        {metrics.accesses.map((access, index) => (
+                        {metrics.accesses.map(access => (
                           <li
                             className="flex justify-between gap-3 max-sm:flex-col max-sm:items-start max-sm:gap-[3px]"
-                            key={`${access.accessedAt}-${index}`}
+                            key={access.id}
                           >
                             <time
                               className="whitespace-nowrap text-[#454650]"

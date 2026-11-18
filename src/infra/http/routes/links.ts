@@ -275,8 +275,9 @@ export const linksRoutes: FastifyPluginAsyncZod = async app => {
                 type: 'array',
                 items: {
                   type: 'object',
-                  required: ['accessedAt', 'userAgent', 'referer'],
+                  required: ['id', 'accessedAt', 'userAgent', 'referer'],
                   properties: {
+                    id: { type: 'string', format: 'uuid' },
                     accessedAt: { type: 'string', format: 'date-time' },
                     userAgent: { type: 'string', nullable: true },
                     referer: { type: 'string', nullable: true },
@@ -326,7 +327,7 @@ export const linksRoutes: FastifyPluginAsyncZod = async app => {
       }
 
       const accessesResult = await pool.query(
-        `SELECT accessed_at, user_agent, referer
+        `SELECT id, accessed_at, user_agent, referer
          FROM link_accesses
          WHERE link_id = $1
          ORDER BY accessed_at DESC`,
@@ -342,6 +343,7 @@ export const linksRoutes: FastifyPluginAsyncZod = async app => {
         },
         totalAccesses: accessesResult.rowCount ?? 0,
         accesses: accessesResult.rows.map(row => ({
+          id: row.id,
           accessedAt: row.accessed_at.toISOString(),
           userAgent: row.user_agent,
           referer: row.referer,
