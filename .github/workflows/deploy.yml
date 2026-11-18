@@ -83,7 +83,7 @@ jobs:
         id: generate-tag
         run: |
           SHA=$(echo $GITHUB_SHA | head -c7)
-          echo "Sha-$SHA" >> $GITHUB_OUTPUT
+          echo "Sha=$SHA" >> $GITHUB_OUTPUT
 
 
       - name: Build, tag, and push image to Amazon ECR
