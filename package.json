@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "concurrently --kill-others-on-fail \"pnpm run start:api\" \"pnpm run start:web\"",
     "start:api": "tsx src/infra/http/server.ts",
-    "start:web": "next start --hostname 0.0.0.0",
+    "start:web": "next start --hostname 0.0.0.0 --port 3000",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src app next.config.ts"
   },
