@@ -14,14 +14,17 @@ import { healthRoute } from './routes/health.js'
 import { linksRoutes } from './routes/links.js'
 import { shortLinksRoute } from './routes/short-links.js'
 
-const server = fastify({ logger: true, ignoreTrailingSlash: true }).withTypeProvider<ZodTypeProvider>()
+const server = fastify({
+  logger: true,
+  ignoreTrailingSlash: true,
+}).withTypeProvider<ZodTypeProvider>()
 
 server.setValidatorCompiler(validatorCompiler)
 server.setSerializerCompiler(serializerCompiler)
 
 const corsOrigins = (process.env.WEB_ORIGIN ?? 'http://localhost:3000')
   .split(',')
-  .map((origin) => origin.trim())
+  .map(origin => origin.trim())
 
 server.register(fastifyCors, { origin: corsOrigins })
 
@@ -61,7 +64,7 @@ server.register(shortLinksRoute)
 async function start() {
   const schema = readFileSync(
     new URL('../database/schema.sql', import.meta.url),
-    'utf8',
+    'utf8'
   )
   await pool.query(schema)
 

@@ -3,7 +3,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { pool } from '../../database/pool.js'
 import { shortCodeParamsSchema } from '../schemas/link.js'
 
-export const shortLinksRoute: FastifyPluginAsyncZod = async (app) => {
+export const shortLinksRoute: FastifyPluginAsyncZod = async app => {
   app.get(
     '/:shortCode',
     {
@@ -55,7 +55,7 @@ export const shortLinksRoute: FastifyPluginAsyncZod = async (app) => {
         `SELECT id, original_url
          FROM links
          WHERE short_code = $1`,
-        [request.params.shortCode.toLowerCase()],
+        [request.params.shortCode.toLowerCase()]
       )
       const link = result.rows[0]
 
@@ -71,10 +71,10 @@ export const shortLinksRoute: FastifyPluginAsyncZod = async (app) => {
           link.id,
           request.headers['user-agent'] ?? null,
           request.headers.referer ?? null,
-        ],
+        ]
       )
 
       return reply.redirect(link.original_url, 302)
-    },
+    }
   )
 }

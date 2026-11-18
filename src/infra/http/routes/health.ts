@@ -1,7 +1,7 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 
-export const healthRoute: FastifyPluginAsyncZod = async (app) => {
+export const healthRoute: FastifyPluginAsyncZod = async app => {
   app.get(
     '/health',
     {
@@ -13,6 +13,6 @@ export const healthRoute: FastifyPluginAsyncZod = async (app) => {
         },
       },
     },
-    async () => ({ status: 'ok' as const }),
+    async () => ({ status: 'ok' as const })
   )
 }

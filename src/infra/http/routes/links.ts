@@ -1,11 +1,8 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
-import { pool } from '../../database/pool.js'
-import {
-  createLinkSchema,
-  linkIdParamsSchema,
-} from '../schemas/link.js'
 import { z } from 'zod'
+import { pool } from '../../database/pool.js'
+import { createLinkSchema, linkIdParamsSchema } from '../schemas/link.js'
 
 function isDuplicateShortCode(error: unknown): boolean {
   return (
@@ -16,7 +13,7 @@ function isDuplicateShortCode(error: unknown): boolean {
   )
 }
 
-export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
+export const linksRoutes: FastifyPluginAsyncZod = async app => {
   app.post(
     '/',
     {
@@ -30,9 +27,19 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
           201: {
             description: 'Link criado.',
             type: 'object',
-            required: ['id', 'originalUrl', 'shortCode', 'createdAt', 'accessCount'],
+            required: [
+              'id',
+              'originalUrl',
+              'shortCode',
+              'createdAt',
+              'accessCount',
+            ],
             properties: {
-              id: { type: 'string', format: 'uuid', description: 'ID do link.' },
+              id: {
+                type: 'string',
+                format: 'uuid',
+                description: 'ID do link.',
+              },
               originalUrl: {
                 type: 'string',
                 format: 'uri',
@@ -78,7 +85,10 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
             description: 'O código curto já está em uso.',
             type: 'object',
             properties: {
-              error: { type: 'string', example: 'Short code is already in use' },
+              error: {
+                type: 'string',
+                example: 'Short code is already in use',
+              },
             },
           },
           500: {
@@ -103,7 +113,7 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
           `INSERT INTO links (id, original_url, short_code)
            VALUES ($1, $2, $3)
            RETURNING id, original_url, short_code, created_at`,
-          [id, originalUrl, code],
+          [id, originalUrl, code]
         )
 
         return reply.code(201).send({
@@ -120,7 +130,7 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
 
         throw error
       }
-    },
+    }
   )
 
   app.get(
@@ -129,7 +139,8 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['Links'],
         summary: 'Lista os links',
-        description: 'Lista os links por página, incluindo a quantidade de acessos.',
+        description:
+          'Lista os links por página, incluindo a quantidade de acessos.',
         querystring: z.object({
           page: z.coerce.number().int().min(1).default(1),
           perPage: z.coerce.number().int().min(1).max(100).default(20),
@@ -140,9 +151,19 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
             type: 'array',
             items: {
               type: 'object',
-              required: ['id', 'originalUrl', 'shortCode', 'createdAt', 'accessCount'],
+              required: [
+                'id',
+                'originalUrl',
+                'shortCode',
+                'createdAt',
+                'accessCount',
+              ],
               properties: {
-                id: { type: 'string', format: 'uuid', description: 'ID do link.' },
+                id: {
+                  type: 'string',
+                  format: 'uuid',
+                  description: 'ID do link.',
+                },
                 originalUrl: {
                   type: 'string',
                   format: 'uri',
@@ -197,7 +218,7 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
         },
       },
     },
-    async (request) => {
+    async request => {
       const { page, perPage } = request.query
       const offset = (page - 1) * perPage
       const result = await pool.query(
@@ -208,17 +229,17 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
          GROUP BY l.id
          ORDER BY l.created_at DESC
          LIMIT $1 OFFSET $2`,
-        [perPage, offset],
+        [perPage, offset]
       )
 
-      return result.rows.map((row) => ({
+      return result.rows.map(row => ({
         id: row.id,
         originalUrl: row.original_url,
         shortCode: row.short_code,
         createdAt: row.created_at.toISOString(),
         accessCount: row.access_count,
       }))
-    },
+    }
   )
 
   app.get(
@@ -297,7 +318,7 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
         `SELECT id, original_url, short_code, created_at
          FROM links
          WHERE id = $1`,
-        [request.params.id],
+        [request.params.id]
       )
 
       if (linkResult.rowCount === 0) {
@@ -309,7 +330,7 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
          FROM link_accesses
          WHERE link_id = $1
          ORDER BY accessed_at DESC`,
-        [request.params.id],
+        [request.params.id]
       )
 
       return {
@@ -320,13 +341,13 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
           createdAt: linkResult.rows[0].created_at.toISOString(),
         },
         totalAccesses: accessesResult.rowCount ?? 0,
-        accesses: accessesResult.rows.map((row) => ({
+        accesses: accessesResult.rows.map(row => ({
           accessedAt: row.accessed_at.toISOString(),
           userAgent: row.user_agent,
           referer: row.referer,
         })),
       }
-    },
+    }
   )
 
   app.delete(
@@ -377,6 +398,6 @@ export const linksRoutes: FastifyPluginAsyncZod = async (app) => {
       }
 
       return reply.code(204).send()
-    },
+    }
   )
 }
