@@ -44,7 +44,7 @@ jobs:
         run: pnpm build
 
       - name: Scan source dependencies
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -89,7 +89,7 @@ jobs:
           echo "uri=$IMAGE_URI" >> "$GITHUB_OUTPUT"
 
       - name: Scan container image before publishing
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: ${{ steps.image.outputs.uri }}
