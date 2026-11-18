@@ -77,41 +77,6 @@ jobs:
 
       - name: Login to AWS ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build container image
-        id: image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:${GITHUB_SHA::7}"
-          docker build --tag "$IMAGE_URI" .
-          echo "uri=$IMAGE_URI" >> "$GITHUB_OUTPUT"
-
-      - name: Scan container image before publishing
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: image
-          image-ref: ${{ steps.image.outputs.uri }}
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: '1'
-
-      - name: Push image to Amazon ECR
-        run: docker push "${{ steps.image.outputs.uri }}"
-
-      - name: Render ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: .aws/task-definition.json
-          container-name: lnk-it
-          image: ${{ steps.image.outputs.uri }}
-
-      - name: Deploy to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+  
