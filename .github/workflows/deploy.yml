@@ -82,10 +82,13 @@ jobs:
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-push-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
         run: |
-          docker build -t lnk-it:v1 .
-          docker tag lnk-it:v1 372293371742.dkr.ecr.us-east-2.amazonaws.com/lnk-it:v1
-          docker push 372293371742.dkr.ecr.us-east-2.amazonaws.com/lnk-it:v1
+          docker build -t lnk-it:v2 .
+          docker tag lnk-it:v2 $ECR_REGISTRY/$ECR_REPOSITORY:v2
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:v2
 
 
 
