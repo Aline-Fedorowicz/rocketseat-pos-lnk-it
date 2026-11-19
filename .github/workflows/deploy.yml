@@ -3,6 +3,7 @@ name: CI and deploy
 on:
   push:
     branches: [master]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -14,8 +15,14 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate frontend and backend
+    name: Validate ${{ matrix.app }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [server, web]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,6 +37,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: ${{ matrix.app }}/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -40,30 +48,30 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Build Next.js
+      - name: Build
         run: pnpm build
+        env:
+          VITE_FRONTEND_URL: http://localhost:5173
+          VITE_BACKEND_URL: http://localhost:3333
 
-      - name: Scan source dependencies
+      - name: Scan dependencies
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
-          scan-ref: .
+          scan-ref: ${{ matrix.app }}
           scanners: vuln
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: '1'
 
   deploy:
-    name: Build and deploy to ECS
+    name: Build and push server image to ECR
     needs: validate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
-      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
-      ECS_SERVICE: ${{ vars.ECS_SERVICE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -81,23 +89,12 @@ jobs:
 
       - name: Generate tag
         id: generate-tag
-        run: |
-          SHA=$(echo $GITHUB_SHA | head -c7)
-          echo "Sha=$SHA" >> $GITHUB_OUTPUT
-
+        run: echo "sha=$(echo $GITHUB_SHA | head -c7)" >> $GITHUB_OUTPUT
 
       - name: Build, tag, and push image to Amazon ECR
-        id: build-push-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
           IMAGE_TAG: ${{ steps.generate-tag.outputs.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./server
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-
-
-     
-
-     
